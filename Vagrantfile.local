@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 required_plugins = %w( vagrant-hostmanager vagrant-cachier vagrant-r10k vagrant-libvirt vagrant-mutate )
 required_plugins.each do |plugin|
-    exec "vagrant plugin install #{plugin};vagrant #{ARGV.join(" ")}" unless Vagrant.has_plugin? plugin || ARGV[0] == 'plugin'
+  exec "vagrant plugin install #{plugin};vagrant #{ARGV.join(" ")}" unless Vagrant.has_plugin? plugin || ARGV[0] == 'plugin'
 end
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
@@ -28,7 +28,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     server.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "uchiwa.pp", :options => "--hiera_config /etc/hiera.yaml"
     server.vm.provision :shell, :path => "tests/rabbitmq.sh"
     config.vm.provision "shell",
-                inline: "sed -ri 's/127\.0\.0\.1\s.*/127.0.0.1 localhost localhost.localdomain/;s/\:\:1\s.*/::1 ip6-localhost ip6-loopback/' /etc/hosts"
+      inline: "sed -ri 's/127\.0\.0\.1\s.*/127.0.0.1 localhost localhost.localdomain/;s/\:\:1\s.*/::1 ip6-localhost ip6-loopback/' /etc/hosts"
+    # The inline code below gets the domainname from the HOST and sets the fqdn on the GUEST
+    # NOTE: the vm.hostname is set and added to the HOST /etc/hosts for resolution so the below should match same)
+    config.vm.provision "shell",
+      inline: "hostnamectl set-hostname" " sensu."+%x(hostname -d).strip
   end
 
   config.vm.define "sensu-client", autostart: true do |client|
@@ -38,7 +42,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     client.vm.provision :shell, :path => "tests/provision_client.sh"
     client.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "sensu-client.pp", :options => "--hiera_config /etc/hiera.yaml"
     config.vm.provision "shell",
-                inline: "sed -ri 's/127\.0\.0\.1\s.*/127.0.0.1 localhost localhost.localdomain/;s/\:\:1\s.*/::1 ip6-localhost ip6-loopback/' /etc/hosts"
+      inline: "sed -ri 's/127\.0\.0\.1\s.*/127.0.0.1 localhost localhost.localdomain/;s/\:\:1\s.*/::1 ip6-localhost ip6-loopback/' /etc/hosts"
   end
 
 end
