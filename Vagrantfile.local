@@ -48,6 +48,4 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision "shell",
       inline: "hostnamectl set-hostname" " sensu-client."+%x(hostname -d).strip
   end
-  end
-
 end
