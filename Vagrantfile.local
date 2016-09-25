@@ -1,0 +1,44 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+required_plugins = %w( vagrant-hostmanager vagrant-cachier vagrant-r10k vagrant-libvirt vagrant-mutate )
+required_plugins.each do |plugin|
+    exec "vagrant plugin install #{plugin};vagrant #{ARGV.join(" ")}" unless Vagrant.has_plugin? plugin || ARGV[0] == 'plugin'
+end
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.synced_folder "../", "/vagrant_data", type: 'nfs', disabled: false, accessmode: "squash" # Mount directory up a level so puppet module list can find modules
+  config.vm.synced_folder ".", "/vagrant", type: 'nfs', disabled: false, accessmode: "squash"
+  config.hostmanager.enabled = true
+  config.hostmanager.manage_host = true
+
+  config.vm.provider :libvirt do |lv|
+    lv.memory = 1536
+  end
+
+  config.vm.define "sensu-server", primary: true, autostart: true do |server|
+    server.vm.box = "ubuntu1464-puppet"
+    server.vm.hostname = "sensu-server."+%x(hostname -d).strip
+    server.vm.network :private_network, ip: "192.168.100.180"
+    server.vm.provision :shell, :path => "tests/provision_server.sh"
+    server.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "rabbitmq.pp", :options => "--hiera_config /etc/hiera.yaml"
+    server.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "sensu-server.pp", :options => "--hiera_config /etc/hiera.yaml"
+    server.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "uchiwa.pp", :options => "--hiera_config /etc/hiera.yaml"
+    server.vm.provision :shell, :path => "tests/rabbitmq.sh"
+    config.vm.provision "shell",
+                inline: "sed -ri 's/127\.0\.0\.1\s.*/127.0.0.1 localhost localhost.localdomain/;s/\:\:1\s.*/::1 ip6-localhost ip6-loopback/' /etc/hosts"
+  end
+
+  config.vm.define "sensu-client", autostart: true do |client|
+    client.vm.box = "ubuntu1464-puppet"
+    client.vm.hostname = "sensu-client."+%x(hostname -d).strip
+    client.vm.network  :private_network, ip: "192.168.100.181"
+    client.vm.provision :shell, :path => "tests/provision_client.sh"
+    client.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "sensu-client.pp", :options => "--hiera_config /etc/hiera.yaml"
+    config.vm.provision "shell",
+                inline: "sed -ri 's/127\.0\.0\.1\s.*/127.0.0.1 localhost localhost.localdomain/;s/\:\:1\s.*/::1 ip6-localhost ip6-loopback/' /etc/hosts"
+  end
+
+end
