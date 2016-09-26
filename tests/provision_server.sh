@@ -10,4 +10,4 @@ apt-get install -y ruby-json redis-server puppet-common vim-nox ruby-dev nagios-
 sed -i '/templatedir/d' /etc/puppet/puppet.conf
 puppet module install sensu/sensu
 puppet module install puppetlabs/rabbitmq
-
+puppet module install yelp/monitoring_check
