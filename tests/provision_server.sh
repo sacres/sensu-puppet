@@ -11,3 +11,5 @@ sed -i '/templatedir/d' /etc/puppet/puppet.conf
 puppet module install sensu/sensu
 puppet module install puppetlabs/rabbitmq
 puppet module install yelp/monitoring_check
+puppet module install puppetlabs-git
+gem install r10k

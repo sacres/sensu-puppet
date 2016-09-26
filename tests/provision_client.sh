@@ -9,3 +9,4 @@ apt-get update
 apt-get install -y ruby-json puppet-common vim-nox ruby-dev #masterless puppet
 sed -i '/templatedir/d' /etc/puppet/puppet.conf
 puppet module install sensu/sensu
+puppet module install puppetlabs-git
